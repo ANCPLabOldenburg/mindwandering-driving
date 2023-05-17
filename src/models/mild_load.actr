@@ -1,0 +1,455 @@
+(set-task "actr.tasks.driving.Driving")
+
+; problems: if car is noticed after attend-near is called
+;	after loop-not-stable
+
+(sgp 
+    :iu 10 
+    :emma t 
+    :v t 
+    :ans 0.1
+    :bll nil
+    :lf 0.3
+    :act nil
+    :rt -10000
+    :digit-detect-delay 0.1
+)
+
+(add-dm 
+    (goal1 isa wanderdrive state drive)
+    (goal2 isa listen state listen)
+    (drive isa goaldecider state drive)
+    (wander isa goaldecider state wander)
+    (word isa word spelling "Tree")
+    (item1 isa memory awareness wander)
+    (item2 isa memory awareness wander)
+    (item3 isa memory awareness wander)
+    (item4 isa memory awareness wander)
+    (item5 isa memory awareness wander)
+    (item6 isa memory awareness wander)
+    (item7 isa memory awareness wander)
+    (item8 isa memory awareness wander)
+    (item9 isa memory awareness wander)
+    (item10 isa memory awareness wander)
+    (item11 isa memory awareness wander)
+    (item12 isa memory awareness wander)
+    (item13 isa memory awareness wander)
+    (item14 isa memory awareness wander)
+    (item15 isa memory awareness wander)
+    (item16 isa memory awareness wander)
+    (item17 isa memory awareness wander)
+    (item18 isa memory awareness wander)
+    (item19 isa memory awareness wander)
+    (item20 isa memory awareness wander)
+    (item21 isa memory awareness wander)
+    (item22 isa memory awareness wander)
+    (item23 isa memory awareness wander)
+    (item24 isa memory awareness wander)
+    (item25 isa memory awareness wander)
+    (item26 isa memory awareness wander)
+    (item27 isa memory awareness wander)
+    (item28 isa memory awareness wander)
+    (item29 isa memory awareness wander)
+    (item30 isa memory awareness wander)
+    (item31 isa memory awareness drive)
+)
+
+(set-all-base-levels 1) 
+(set-base-levels (wander 0.7) )
+
+(goal-focus goal1)
+(goal-focus goal2)
+
+;----- LISTENING --------
+
+(p attend-aural-driving
+    =goal>
+        isa listen
+        state listen
+    =aural-location>
+        isa audio-event
+    ?aural>
+        state free
+    ?retrieval>
+        state free
+        buffer empty
+    !eval! (is-not-over-lane)
+==>
+    =goal>
+    -aural>
+    -aural-location>
+)
+
+(p attend-aural-mw
+    =goal>
+        isa listen
+        state listen
+    =aural-location>
+        isa audio-event
+    =retrieval> 
+        isa memory
+    ?aural>
+        state free
+==>
+    =goal>
+    +retrieval>
+        isa	goaldecider
+        state drive
+    -aural>
+    -aural-location>
+)
+
+(p refocus-to-driving
+    =goal>
+        isa wanderdrive
+        state wander
+    =retrieval> 
+        isa goaldecider
+        state drive
+    ?aural>
+        state free
+==>
+    =goal>
+        isa wanderdrive
+        state drive
+)
+
+;----- Mind wandering -----
+
+(p start
+    =goal>
+        isa wanderdrive
+        state start
+        na nil
+    ?retrieval>
+        buffer empty
+        state free
+    ?visual-location>
+        state free
+        - buffer requested
+    ?visual>
+        state free
+        buffer empty
+==>
+    =goal>
+        isa wanderdrive
+        state drive
+        na nil
+    +visual-location>
+        isa visual-location>
+        kind near
+    +retrieval>
+        isa goaldecider
+        state drive
+        
+)
+
+(p start-mind-wander
+    =goal>
+        isa	wanderdrive
+        state	drive
+    =retrieval>
+        isa 	goaldecider 
+        state 	wander    
+==>
+    =goal>
+        isa	wanderdrive
+        state	wander 
+    +retrieval>
+        isa	memory
+)
+
+(p mind-wander
+    =goal>
+        isa	wanderdrive
+        state	wander
+    =retrieval>
+        isa	memory
+        awareness	wander
+    !eval! (is-not-over-lane)
+==>
+    =goal>
+    +retrieval>
+        isa memory 
+)
+
+(p stop-mind-wander
+    =goal>
+        isa wanderdrive
+        state wander
+    =retrieval>
+        isa           memory
+        awareness     wander
+    !eval! (is-over-lane)
+==>
+    !eval! (reset-flag)
+    =goal>
+        isa wanderdrive
+        state drive
+    -visual>
+    -visual-location>
+)
+
+(p remember-to-drive
+    =goal>
+        isa wanderdrive
+    =retrieval>
+        isa           memory
+        awareness     drive
+==>
+    !eval! (reset-flag)
+    +retrieval>
+        isa  goaldecider
+        state  drive
+    -visual-location>
+    =goal>
+        isa wanderdrive
+        state drive
+)
+
+;----- Driving -----
+
+(p drive*attend-near
+    =goal>
+        isa wanderdrive
+        state drive
+        ;na nil
+    =retrieval>
+        isa goaldecider
+        state drive
+    ?visual-location>
+        state free
+        - buffer requested
+    ?visual>
+        state free
+        buffer empty
+==>
+    +visual-location>
+        isa visual-location
+        kind near
+)
+
+(p drive*process-near-attend-far
+    =goal>
+        isa wanderdrive
+        state drive
+        na nil
+    =visual-location>
+        isa visual-location
+        kind near
+        screen-x =nx
+        screen-y =ny
+        distance =nd
+    ?visual>
+        state free
+        buffer empty
+==>
+    !bind! =na (image->angle =nx =nd)
+    =goal>
+        na =na
+    +visual-location>
+        isa visual-location
+        kind car
+)
+
+;is this needed??
+(p drive*process-near-attend-far-car
+    =goal>
+        isa wanderdrive
+        state drive
+        na nil
+        fkind2 car
+    =retrieval>
+        state drive
+    =visual-location>
+        isa visual-location
+        kind near
+        screen-x =nx
+        screen-y =ny
+        distance =nd
+    ?visual>
+        state free
+        buffer empty
+==>
+    !bind! =na (image->angle =nx =nd)
+    =goal>
+        na =na
+    +visual-location>
+        isa visual-location
+        kind car
+)
+
+(p drive*process-car
+    =goal>
+        isa wanderdrive
+        state drive
+        na =na
+        fa nil
+        na2    =na2
+        fa2    =fa2
+        fkind2 =fkind
+        fthw2  =fthw2
+        time2  =time2
+    =visual-location>
+        isa visual-location
+        kind car
+        kind =fkind
+        screen-x =fx
+        distance =fd
+    ?visual>
+        state free
+        buffer empty
+==>
+    !bind! =fa (image->angle =fx =fd)
+    !bind! =time (mp-time)
+    !bind! =dna (- =na =na2)
+    !bind! =dfa (- =fa =fa2)
+    !bind! =dt (- =time =time2)
+    !bind! =vna (my/ =dna =dt)
+    !bind! =vfa (my/ =dfa =dt)
+    !bind! =v (get-velocity)
+    !bind! =fthw (get-thw =fd =v)
+    !bind! =dthw (- =fthw =fthw2)
+    !eval! (do-steer =na =dna =dfa =dt)
+    !eval! (do-accelerate =fthw =dthw =dt)
+    =goal>
+        fkind =fkind
+        fa =fa
+        fd =fd
+        vna =vna
+        vfa =vfa
+        time =time
+        fthw =fthw
+        v =v
+        done t
+    +visual>
+        isa move-attention
+        screen-pos =visual-location
+)
+
+(p drive*process-without-old
+    =goal>
+        isa wanderdrive
+        state drive
+        na =na
+        fa nil
+    =visual-location>
+        isa visual-location
+        kind =fkind
+        screen-x =fx
+        distance =fd
+    ?visual>
+        state free
+        buffer empty
+==>
+    !bind! =fa (image->angle =fx =fd)
+    !bind! =v (get-velocity)
+    !bind! =fthw (get-thw =fd =v)
+    !bind! =time (mp-time)
+    =goal>
+        na nil
+        fa nil
+        na2 =na
+        fa2 =fa
+        fd2 =fd
+        fkind2 =fkind
+        fthw2 =fthw
+        time2 =time
+    +visual-location>
+        isa visual-location
+        kind near        
+)
+(spp drive*process-without-old :u 7)
+
+(p drive*loop-stable
+    =goal>
+        isa wanderdrive
+        state drive
+        na =na
+        fa =fa
+        vna =vna
+        vfa =vfa
+        fd =fd
+        fkind =fkind
+        fthw =fthw
+        time =time
+    =visual>
+        isa car
+    ?retrieval>
+        state free
+        buffer empty
+    !eval! (is-car-stable =na =vna =vfa)
+==>
+    =goal>
+        na nil
+        fa nil
+        na2 =na
+        fa2 =fa
+        fd2 =fd
+        fkind2 =fkind
+        fthw2 =fthw
+        time2 =time
+    +retrieval>
+        isa goaldecider
+)
+
+(p drive*loop-not-stable
+    =goal>
+        isa wanderdrive
+        state drive
+        na =na
+        fa =fa
+        vna =vna
+        vfa =vfa
+        fd =fd
+        fkind =fkind
+        fthw =fthw
+        time =time
+    =visual>
+        isa car
+    ?retrieval>
+        state free
+        buffer empty
+    !eval! (is-car-not-stable =na =vna =vfa)
+==>
+    =goal>
+        na nil
+        fa nil
+        na2 =na
+        fa2 =fa
+        fd2 =fd
+        fkind2 =fkind
+        fthw2 =fthw
+        time2 =time
+    +visual-location>
+        isa visual-location
+        kind near
+)
+
+(p drive*reset
+    =goal>
+        isa wanderdrive
+        state drive
+    ?visual-location>
+        state free
+        - buffer requested
+    ?visual>
+        state free
+        buffer empty
+    ?retrieval>
+        state free
+        buffer empty
+==>
+    =goal>
+        na nil
+        fa nil
+        na2 nil
+        fa2 nil
+        fkind2 nil
+        fthw2 nil
+        time2 nil
+    +visual-location>
+        isa visual-location
+        kind near
+)
+(spp :u 1)
